@@ -7,7 +7,6 @@ import sys
 PERSONAL_ID = ''
 PERSONAL_SECRET = ''
 
-
 def main():
     # TODO
     pass

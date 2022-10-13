@@ -7,6 +7,20 @@ import sys
 PERSONAL_ID = '506D1D'
 PERSONAL_SECRET = 'ca1316f53ed206e3217d41b3951fffa5'
 
+def parse_config():
+    pass 
+
+def EHLO():
+    pass 
+
+def MAIL():
+    pass 
+
+def RCPT():
+    pass 
+
+def DATA():
+    pass 
 
 def main():
     # TODO
