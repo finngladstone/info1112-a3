@@ -8,8 +8,8 @@ PERSONAL_ID = ''
 PERSONAL_SECRET = ''
 
 def main():
-    # TODO
-    pass
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect()
 
 
 if __name__ == '__main__':
