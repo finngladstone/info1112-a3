@@ -16,19 +16,26 @@ class Config_dict(dict): # https://www.geeksforgeeks.org/python-add-new-keys-to-
         self[key] = value  
     
     def check_data(self):
-        if len(self) == 5:
-            pass 
-        else:
+
+        if len(self) != 5: # check all datapoints are addressed
             return False 
 
         key_names = ['server_port', 'client_port', 'inbox_path', \
             'send_path', 'spy_path']
         
-        for key in key_names:
-            if key not in self:
+        for key in key_names: # check keys are valid 
+            if key not in self.keys():
                 return False 
+            
+        paths = ['send_path', 'spy_path', 'inbox_path']
 
+        for key in paths:
+            print(os.path.abspath(self[key]))
+            if not os.path.exists(self[key]):
+                print("Directory " + self[key] + " failed os.path.exists")
+                return False 
         
+        return True 
 
 def parse_config(file_path):
 
@@ -44,7 +51,7 @@ def parse_config(file_path):
         print("config file path invalid")
         sys.exit(2)
 
-    print(return_dict)
+    print(return_dict.check_data())
 
 class Email:
     
