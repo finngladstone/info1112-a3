@@ -7,6 +7,8 @@ import sys
 PERSONAL_ID = '506D1D'
 PERSONAL_SECRET = 'ca1316f53ed206e3217d41b3951fffa5'
 
+""" Class definitions """
+
 class Config_dict(dict): # https://www.geeksforgeeks.org/python-add-new-keys-to-a-dictionary/
     
     def __init__(self):
@@ -15,7 +17,7 @@ class Config_dict(dict): # https://www.geeksforgeeks.org/python-add-new-keys-to-
     def add(self, key, value):
         self[key] = value  
     
-    def check_data(self):
+    def check_data(self): # asserts all required datapoints are covered
 
         if len(self) != 5: # check all datapoints are addressed
             return False 
@@ -35,26 +37,6 @@ class Config_dict(dict): # https://www.geeksforgeeks.org/python-add-new-keys-to-
                 return False 
         
         return True 
-
-def parse_config(file_path):
-
-    return_dict = Config_dict()
-    
-    try:
-        with open(file_path, 'r') as fl:
-            for line in fl:
-                temp = line.strip().split("=")
-                return_dict.add(temp[0], temp[1])
-            
-    except FileNotFoundError:
-        print("config file path invalid")
-        sys.exit(2)
-
-    if not return_dict.check_data():
-        print("config file has invalid data")
-        sys.exit(2)
-
-    return return_dict
 
 class Email:
     
@@ -77,19 +59,54 @@ class Email:
 
 
 
+""" Functions """
 
+def parse_config(file_path): # creates custom dict object, adds data from config file as specified in cmdarg, checks validity
 
-
-
-
-
+    return_dict = Config_dict()
     
+    try:
+        with open(file_path, 'r') as fl:
+            for line in fl:
+                temp = line.strip().split("=")
+                return_dict.add(temp[0], temp[1])
+            
+    except FileNotFoundError:
+        print("config file path invalid")
+        sys.exit(2)
+
+    if not return_dict.check_data():
+        print("config file has invalid data")
+        sys.exit(2)
+
+    return return_dict
+
+def init_socket(config: dict): # initiates socket using config dictionary
+
+    port = int(config['server_port'])
+    hostnm = socket.gethostname()
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind( (hostnm, port) )
+    sock.listen(5) # will need to modify this for multiprocessing 
+
+    return sock
+
 
 def main():
     if len(sys.argv) < 2:
         sys.exit(1)
     
     config = parse_config(sys.argv[1])
+    server_sock = init_socket(config)
+
+    while True:
+        client_conn, client_addr = server_sock.accept()
+        print(f"Connection established on {client_addr}")
+        client_conn.send("Have a great day./n".encode())
+
+        client_conn.close()
+        break
     
 
 
