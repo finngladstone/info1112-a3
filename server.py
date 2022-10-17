@@ -30,9 +30,8 @@ class Config_dict(dict): # https://www.geeksforgeeks.org/python-add-new-keys-to-
         paths = ['send_path', 'spy_path', 'inbox_path']
 
         for key in paths:
-            print(os.path.abspath(self[key]))
-            if not os.path.exists(self[key]):
-                print("Directory " + self[key] + " failed os.path.exists")
+            path_temp = os.path.expanduser(self[key])
+            if not os.path.exists(path_temp):
                 return False 
         
         return True 
@@ -51,7 +50,11 @@ def parse_config(file_path):
         print("config file path invalid")
         sys.exit(2)
 
-    print(return_dict.check_data())
+    if not return_dict.check_data():
+        print("config file has invalid data")
+        sys.exit(2)
+
+    return return_dict
 
 class Email:
     
@@ -86,7 +89,8 @@ def main():
     if len(sys.argv) < 2:
         sys.exit(1)
     
-    parse_config(sys.argv[1])
+    config = parse_config(sys.argv[1])
+    
 
 
 if __name__ == '__main__':
