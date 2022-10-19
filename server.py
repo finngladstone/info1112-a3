@@ -93,6 +93,19 @@ def init_socket(config: dict): # initiates socket using config dictionary
     return sock
 
 
+def establish_connection(sock: socket.socket):
+
+    while True:
+        client_conn, client_addr = sock.accept()
+        sys.stdout.flush("")
+
+        client_conn.send("Have a great day./n".encode())
+
+        client_conn.close()
+        break
+
+
+
 def main():
     if len(sys.argv) < 2:
         sys.exit(1)
@@ -100,13 +113,9 @@ def main():
     config = parse_config(sys.argv[1])
     server_sock = init_socket(config)
 
-    while True:
-        client_conn, client_addr = server_sock.accept()
-        print(f"Connection established on {client_addr}")
-        client_conn.send("Have a great day./n".encode())
+    establish_connection(server_sock)
 
-        client_conn.close()
-        break
+    
     
 
 
