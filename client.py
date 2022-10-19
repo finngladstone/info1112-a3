@@ -76,12 +76,33 @@ def parse_config(file_path):
 
     return return_dict
 
-def init_email(path):
+
+def init_email(path): 
+
+    # data is handled in a weird way 
+    # multiple emails not handled
+    # no checks
+
+    fl_dict = dict()
 
     with open(path, 'r') as fl:
-        pass 
+        for i in range(0, 4):
+            temp = fl.readline().strip().split(": ")
+            fl_dict[temp[0]] = temp[1]
 
-    
+        fl_dict['data'] = fl.readlines()
+
+    keywords = ['From', 'To', 'Date', 'Subject']
+
+    for i in keywords: # could abstract 
+        if i not in fl_dict:
+            sys.stdout.flush(f"C: {path}: Bad formation")
+            return None
+
+    reval = Email(fl_dict['From'], fl_dict['To'], fl_dict['Date'], \
+        fl_dict['Subject'], fl_dict['data'])
+
+    return reval
 
 def init_email_ls(config:dict): # https://www.geeksforgeeks.org/how-to-iterate-over-files-in-directory-using-python/
 
@@ -100,7 +121,11 @@ def init_email_ls(config:dict): # https://www.geeksforgeeks.org/how-to-iterate-o
 
 
 def init_socket(config: dict):
-    pass 
+
+    self_port = config['client_port']
+    addr = socket.gethostname()
+
+     
 
 
 def main():
@@ -111,7 +136,6 @@ def main():
     config = parse_config(sys.argv[1])
     
     test = init_email_ls(config)
-    print(test)
 
 
 if __name__ == '__main__':
