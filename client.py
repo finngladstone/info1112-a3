@@ -8,7 +8,11 @@ import sys
 PERSONAL_ID = ''
 PERSONAL_SECRET = ''
 
+
+
 """ Class Definitions """
+
+
 
 class Config_dict(dict):
     def __init__(self):
@@ -46,6 +50,12 @@ class Email():
         self.subj = subj
         self.data = data
 
+
+
+""" Helper Functions """
+
+
+
 def parse_config(file_path):
 
     return_dict = Config_dict()
@@ -66,32 +76,31 @@ def parse_config(file_path):
 
     return return_dict
 
-def email_fl_parser(email):
+def init_email(path):
 
-    print(email)
+    with open(path, 'r') as fl:
+        pass 
 
-    pass 
+    
 
-def parse_email_dir(config: dict):
+def init_email_ls(config:dict): # https://www.geeksforgeeks.org/how-to-iterate-over-files-in-directory-using-python/
 
-    Emails = []
+    emails = []
 
-    email_dir = os.path.expanduser((config['inbox_path']))
+    real_path = os.path.expanduser(config['send_path'])
 
-    for fl in os.listdir(email_dir):
-        real_path = os.path.join(email_dir, fl)
-        
-        if os.path.isfile(fl):
-            Emails.append(email_fl_parser(real_path))
+    for filename in os.scandir(real_path):
+        if not filename.is_file():
+            continue
 
-    return Emails
+        new_path = os.path.join(real_path, filename)
+        emails.append(init_email(new_path))
+
+    return emails
 
 
 def init_socket(config: dict):
     pass 
-
-
-
 
 
 def main():
@@ -100,12 +109,9 @@ def main():
         sys.exit(1)
     
     config = parse_config(sys.argv[1])
-
-
-    # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # sock.connect()
-
-    parse_email_dir(config)
+    
+    test = init_email_ls(config)
+    print(test)
 
 
 if __name__ == '__main__':
