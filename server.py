@@ -81,43 +81,12 @@ def parse_config(file_path): # creates custom dict object, adds data from config
 
     return return_dict
 
-def init_socket(config: dict): # initiates socket using config dictionary
-
-    port = int(config['server_port'])
-    hostnm = socket.gethostname()
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind( (hostnm, port) )
-    sock.listen(5) # will need to modify this for multiprocessing 
-
-    return sock
-
-
-def establish_connection(sock: socket.socket):
-
-    while True:
-        client_conn, client_addr = sock.accept()
-        sys.stdout.flush("")
-
-        client_conn.send("Have a great day./n".encode())
-
-        client_conn.close()
-        break
-
-
 
 def main():
     if len(sys.argv) < 2:
         sys.exit(1)
     
     config = parse_config(sys.argv[1])
-    server_sock = init_socket(config)
-
-    establish_connection(server_sock)
-
-    
-    
-
 
 if __name__ == '__main__':
     main()

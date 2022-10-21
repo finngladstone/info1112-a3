@@ -42,6 +42,7 @@ class Config_dict(dict):
         
         return True
 
+
 class Email():
     def __init__(self, sender, recpt, date, subj, data) -> None:
         self.sender = sender 
@@ -50,6 +51,14 @@ class Email():
         self.subj = subj
         self.data = data
 
+    def fix_recpt(self):
+        if not "," in self.recpt:
+            recpt_temp = [self.recpt]
+        else:
+            recpt_temp = self.recpt.split(",")
+
+        self.recpt = recpt_temp
+        return
 
 
 """ Helper Functions """
@@ -77,10 +86,11 @@ def parse_config(file_path):
     return return_dict
 
 
+
+
 def init_email(path): 
 
     # data is handled in a weird way 
-    # multiple emails not handled
     # no checks
 
     fl_dict = dict()
@@ -102,6 +112,8 @@ def init_email(path):
     reval = Email(fl_dict['From'], fl_dict['To'], fl_dict['Date'], \
         fl_dict['Subject'], fl_dict['data'])
 
+    reval.fix_recpt() # handles multiple emails 
+
     return reval
 
 def init_email_ls(config:dict): # https://www.geeksforgeeks.org/how-to-iterate-over-files-in-directory-using-python/
@@ -120,12 +132,10 @@ def init_email_ls(config:dict): # https://www.geeksforgeeks.org/how-to-iterate-o
     return emails
 
 
+""" Socket Helpers"""
+
 def init_socket(config: dict):
 
-    self_port = config['client_port']
-    addr = socket.gethostname()
-
-     
 
 
 def main():
@@ -134,8 +144,8 @@ def main():
         sys.exit(1)
     
     config = parse_config(sys.argv[1])
+    to_send = init_email_ls(config)
     
-    test = init_email_ls(config)
 
 
 if __name__ == '__main__':
