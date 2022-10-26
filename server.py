@@ -1,6 +1,8 @@
+from calendar import c
 import os
 import socket
 import sys
+from wsgiref.simple_server import server_version
 
 
 # Visit https://edstem.org/au/courses/8961/lessons/26522/slides/196175 to get
@@ -81,6 +83,15 @@ def parse_config(file_path): # creates custom dict object, adds data from config
 
     return return_dict
 
+def init_socket(config: dict):
+    
+    port = int(config['server_port'])
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((socket.gethostname(), port))
+    sock.listen(1)
+
+    return sock
+
 
 def main():
     if len(sys.argv) < 2:
@@ -88,5 +99,16 @@ def main():
     
     config = parse_config(sys.argv[1])
 
-if __name__ == '__main__':
+    server_sock = init_socket(config)
+
+    while True:
+        client_sock, addr = server_sock.accept()
+        print("Connection established")
+       
+        client_sock.send(bytes("Greetings", "utf-8"))
+        client_sock.close()
+
+
+
+if __name__ == '__main__': 
     main()

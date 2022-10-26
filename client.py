@@ -12,8 +12,6 @@ PERSONAL_SECRET = ''
 
 """ Class Definitions """
 
-
-
 class Config_dict(dict):
     def __init__(self):
         self = dict()
@@ -59,6 +57,48 @@ class Email():
 
         self.recpt = recpt_temp
         return
+
+class Client(): # wrapper class for all relevant client attributes 
+
+    def __init__(self, config: dict):
+        self.server_port = config['server_port']
+        self.client_port = config['client_port']
+        self.send_path = config['send_path']
+        self.emails = []
+        
+        self.current_sock = None 
+    
+
+    # https://subscription.packtpub.com/book/networking-and-servers/9781786463999/1/ch01lvl1sec09/handling-socket-errors-gracefully
+
+    def init_socket(self):
+
+        # attributes
+        port = int(self.server_port)
+        hostnm = socket.gethostname()
+
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+ 
+        try: # connect to localhost / server-port
+            sock.connect((hostnm, port))
+        except socket.gaierror as e:
+            print("Address-related error connecting to server: %s" % e)
+
+    def close_socket(self):
+        
+        if (self.current_sock != None):
+
+            self.current_sock.close()
+            self.current_sock = None 
+        else:
+            print("close_socket: Error: Socket not found")
+        
+        return 
+
+    
+
+
 
 
 """ Helper Functions """
@@ -132,11 +172,6 @@ def init_email_ls(config:dict): # https://www.geeksforgeeks.org/how-to-iterate-o
     return emails
 
 
-""" Socket Helpers"""
-
-def init_socket(config: dict):
-
-
 
 def main():
 
@@ -145,6 +180,10 @@ def main():
     
     config = parse_config(sys.argv[1])
     to_send = init_email_ls(config)
+
+    main_client = Client(config)
+
+    main_client.init_socket()
     
 
 
