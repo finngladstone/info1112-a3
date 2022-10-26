@@ -1,5 +1,14 @@
 # INFO1112 Assignment 3 
 
+## README
+
+- Server port: 
+- Server binds to port 
+- Client connects to **same port**
+- Client port only exists for MITM attacker to _intercept the client_
+
+
+
 ## Task 4
 
 
