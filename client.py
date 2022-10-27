@@ -158,10 +158,29 @@ def close_socket(sock: socket.socket):
     
     return 
 
+""" EMAIL HELPER FNS """
+
+def EHLO(sock: socket.socket):
+    pass 
+
+def MAIL_FROM(sock: socket.socket, email: Email):
+    pass 
+
+def RECPT_TO(sock: socket.socket, email: Email):
+    pass 
+
+def DATA(sock: socket.socket, email: Email):
+    pass 
+
+
+
 """ EMAIL SENDER FN"""
 
-def send_email(email: Email, socket: socket.socket):
-    pass 
+def send_email(email: Email, sock: socket.socket):
+    
+    with sock:
+        check_server_response(sock, 220)
+
 
 
 
