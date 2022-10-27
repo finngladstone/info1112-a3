@@ -139,6 +139,14 @@ def start_socket(config:dict):
 
     return client_sock
 
+def check_server_response(client_sock: socket.socket, expected_code: int):
+
+    server_response = str(client_sock.recv(256))
+    ls = server_response.split()
+
+    if expected_code != ls[0]:
+        raise ValueError(f"Expected server code {expected_code} \n Actual code {ls[0]}") 
+
 def close_socket(sock: socket.socket):
 
     sock.send("QUIT")
@@ -149,16 +157,6 @@ def close_socket(sock: socket.socket):
         print("Unexpected status code")
     
     return 
-
-def check_server_response(client_sock: socket.socket, expected_code: int):
-
-    server_response = str(client_sock.recv(256))
-    ls = server_response.split()
-
-    if expected_code != ls[0]:
-        return False 
-
-    return True 
 
 """ EMAIL SENDER FN"""
 
