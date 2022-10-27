@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import os
 from pathlib import Path
 import socket
@@ -58,51 +59,8 @@ class Email():
         self.recpt = recpt_temp
         return
 
-class Client(): # wrapper class for all relevant client attributes 
 
-    def __init__(self, config: dict):
-        self.server_port = config['server_port']
-        self.client_port = config['client_port']
-        self.send_path = config['send_path']
-        self.emails = []
-        
-        self.current_sock = None 
-    
-
-    # https://subscription.packtpub.com/book/networking-and-servers/9781786463999/1/ch01lvl1sec09/handling-socket-errors-gracefully
-
-    def init_socket(self):
-
-        # attributes
-        port = int(self.server_port)
-        hostnm = socket.gethostname()
-
-        
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
- 
-        try: # connect to localhost / server-port
-            sock.connect((hostnm, port))
-        except socket.gaierror as e:
-            print("Address-related error connecting to server: %s" % e)
-
-    def close_socket(self):
-        
-        if (self.current_sock != None):
-
-            self.current_sock.close()
-            self.current_sock = None 
-        else:
-            print("close_socket: Error: Socket not found")
-        
-        return 
-
-    
-
-
-
-
-""" Helper Functions """
-
+""" Email parsing functions """
 
 
 def parse_config(file_path):
@@ -124,8 +82,6 @@ def parse_config(file_path):
         sys.exit(2)
 
     return return_dict
-
-
 
 
 def init_email(path): 
@@ -171,6 +127,44 @@ def init_email_ls(config:dict): # https://www.geeksforgeeks.org/how-to-iterate-o
 
     return emails
 
+""" SOCKET HELPER FUNCTIONS """
+
+def start_socket(config:dict):
+
+    port = int(config['server_port'])
+    hostnm = socket.gethostname()
+
+    client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_sock.connect((hostnm, port))
+
+    return client_sock
+
+def close_socket(sock: socket.socket):
+
+    sock.send("QUIT")
+
+    if check_server_response(sock, 221):
+        sock.close()
+    else:
+        print("Unexpected status code")
+    
+    return 
+
+def check_server_response(client_sock: socket.socket, expected_code: int):
+
+    server_response = str(client_sock.recv(256))
+    ls = server_response.split()
+
+    if expected_code != ls[0]:
+        return False 
+
+    return True 
+
+""" EMAIL SENDER FN"""
+
+def send_email(email: Email, socket: socket.socket):
+    pass 
+
 
 
 def main():
@@ -181,9 +175,14 @@ def main():
     config = parse_config(sys.argv[1])
     to_send = init_email_ls(config)
 
-    main_client = Client(config)
+    for email_item in to_send:
+        send_sock = start_socket(config)
 
-    main_client.init_socket()
+        send_email(email_item, send_sock)
+
+        close_socket(send_sock)
+
+    
     
 
 
