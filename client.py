@@ -9,7 +9,10 @@ import sys
 PERSONAL_ID = ''
 PERSONAL_SECRET = ''
 
+""" Generic helper functions """
 
+def flush_print(x):
+    print(x, flush=True)
 
 """ Class Definitions """
 
@@ -102,7 +105,7 @@ def init_email(path):
 
     for i in keywords: # could abstract 
         if i not in fl_dict:
-            sys.stdout.flush(f"C: {path}: Bad formation")
+            flush_print(f"C: {path}: Bad formation")
             return None
 
     reval = Email(fl_dict['From'], fl_dict['To'], fl_dict['Date'], \
@@ -150,11 +153,8 @@ def check_server_response(client_sock: socket.socket, expected_code: int):
 def close_socket(sock: socket.socket):
 
     sock.send("QUIT")
-
-    if check_server_response(sock, 221):
-        sock.close()
-    else:
-        print("Unexpected status code")
+    check_server_response(sock, 221)
+    sock.close()
     
     return 
 
@@ -166,10 +166,11 @@ def EHLO(sock: socket.socket):
 def MAIL_FROM(sock: socket.socket, email: Email):
     pass 
 
-def RECPT_TO(sock: socket.socket, email: Email):
+def RCPT_TO(sock: socket.socket, email: Email):
     pass 
 
 def DATA(sock: socket.socket, email: Email):
+    # handle code 354 in here
     pass 
 
 
@@ -180,6 +181,20 @@ def send_email(email: Email, sock: socket.socket):
     
     with sock:
         check_server_response(sock, 220)
+        
+        EHLO(sock)
+        check_server_response(sock, 250)
+
+        MAIL_FROM(sock, email)
+        check_server_response(sock, 250)
+
+        RCPT_TO(sock, email)
+        check_server_response(sock, 250)
+
+        DATA(sock, email)
+        check_server_response(sock, 250)
+
+    return None 
 
 
 
