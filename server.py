@@ -90,8 +90,39 @@ def init_socket(config: dict):
 
     return sock
 
+def confirm_valid(msg: str):
+
+    valid_fns = ["EHLO", "MAIL_FROM", "RCPT_TO", "DATA", "QUIT"]
+
+    for x in valid_fns:
+        if x in msg:
+            return True 
+
+    return False 
+
+def read_email(sock: socket.socket): # emails are inputted here
+    temp = Email()
+    
+
+
+
+def write_to_file(email: Email, config: dict):
+
+    path = os.path.expanduser(config['inbox_path'])
+    
+    with open(path.joinpath(email.time, 'w')) as f:
+        f.write(f"From: {email.sender}")
+        f.write(f"To: {email.recp}")
+        f.write(f"Date: {email.time}")
+        f.write(f"Subject: {email.subject}")
+        f.write(f"{email.body}")
+
+    return 
+
+
 
 def main():
+    
     if len(sys.argv) < 2:
         sys.exit(1)
     
