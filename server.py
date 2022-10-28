@@ -1,8 +1,6 @@
-from calendar import c
 import os
 import socket
 import sys
-from wsgiref.simple_server import server_version
 
 
 # Visit https://edstem.org/au/courses/8961/lessons/26522/slides/196175 to get
@@ -103,10 +101,7 @@ def main():
 
     while True:
         client_sock, addr = server_sock.accept()
-        print("Connection established")
-       
-        client_sock.send(bytes("Greetings", "utf-8"))
-        client_sock.close()
+        
 
 
 

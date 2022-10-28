@@ -132,6 +132,14 @@ def init_email_ls(config:dict): # https://www.geeksforgeeks.org/how-to-iterate-o
 
 """ SOCKET HELPER FUNCTIONS """
 
+def check_server_response(client_sock: socket.socket, expected_code: int):
+
+    server_response = str(client_sock.recv(256))
+    ls = server_response.split()
+
+    if expected_code != ls[0]:
+        raise ValueError(f"Expected server code {expected_code} \n Actual code {ls[0]}") 
+
 def start_socket(config:dict):
 
     port = int(config['server_port'])
@@ -141,14 +149,6 @@ def start_socket(config:dict):
     client_sock.connect((hostnm, port))
 
     return client_sock
-
-def check_server_response(client_sock: socket.socket, expected_code: int):
-
-    server_response = str(client_sock.recv(256))
-    ls = server_response.split()
-
-    if expected_code != ls[0]:
-        raise ValueError(f"Expected server code {expected_code} \n Actual code {ls[0]}") 
 
 def close_socket(sock: socket.socket):
 
