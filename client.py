@@ -1,4 +1,5 @@
 import os
+from re import S
 import socket
 import sys
 
@@ -34,6 +35,18 @@ class Email():
         return
 
 
+"""
+CONFIG_PARSER()
+
+Using 1st cmdline argument(path to config file)'
+- Check if exists
+- Create dictionary of keys/values 
+- Check that keys are valid 
+- Check that port values are numeric 
+- Return config dictionary obj
+
+"""
+
 def config_parser(file_path): # handles creation + all error checks for config
 
     reval = Custom_dict()
@@ -52,7 +65,7 @@ def config_parser(file_path): # handles creation + all error checks for config
 
     for key in key_names:
         if key not in reval.keys():
-            flush_print("Config_parser: missing property")
+            # flush_print("Config_parser: missing property")
             sys.exit(2)
 
     # check that send_path is valid 
@@ -67,17 +80,34 @@ def config_parser(file_path): # handles creation + all error checks for config
 
     return reval 
 
+""" 
+EMAIL_PARSER()
+
+Using send_path: 
+    - rectify relative paths 
+    - create list of paths to email txt files 
+    - iterate email text files and check validity 
+    - if validity checks pass, create Email object for each file 
+    - return list of email objs
+
+"""
+
 def email_parser(path: str):
+
     email_ls = []
-    email_dir = os.path.expanduser(path)
     email_path_ls = []
+    path_temp = os.path.expanduser(path)
+    
+    if "./" in path_temp:
+        path_temp = path_temp.replace("./", os.getcwd() + "/")
 
     # constructs list of email paths
-    for filename in os.scandir(email_dir):
+    for filename in os.scandir(path_temp):
+
         if not filename.is_file():
             continue
         else:
-            email_item_path = os.path.join(email_dir, filename.name)
+            email_item_path = os.path.join(path_temp, filename.name)
             email_path_ls.append(email_item_path)
 
     # iterates through email paths and creates Email objects if valid 
@@ -99,6 +129,10 @@ def email_parser(path: str):
             flush_print(f"Could not read file {email_path}")
             sys.exit(2)
 
+        except IndexError:
+            flush_print(f"C: {email_path}: Bad formation")
+            continue 
+
         valid_keys = {"From", "To", "Date", "Subject", "Data"}
         for key in email_dict.keys():
             if key not in valid_keys:
@@ -119,13 +153,103 @@ def email_parser(path: str):
         
     return email_ls
 
+""" 
+# Socket helper functions:
+
+START_SOCKET() - using given port, create socket obj, connect to server
+CHECK_SERVER_CODE() - adapted from polak's goated tut, checks response code 
+
+"""
+
+def start_socket(config: dict):
+    port = int(config['server_port'])
+    hostnm = socket.gethostname()
+
+    client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    try:
+        client_sock.connect((hostnm, port))
+
+    except socket.error :
+        flush_print("C: Cannot establish connection")
+        sys.exit(3)
+
+    return client_sock
+
+def check_server_code(client_sock: socket.socket, expected_code: int):
+    # no error checking on recv()
+
+    server_response = (client_sock.recv(256)).decode()
+    ls = server_response.split()
+
+    if expected_code != int(ls[0]):
+        raise ValueError(f"Expected code {expected_code}, actual code {ls[0]}")
+
+    return None
+
+def check_service_ready(client_sock: socket.socket):
+    
+    try:
+        server_response = (client_sock.recv(256)).decode()
+        server_response_ls = server_response.split()
+
+        if server_response_ls[0] == '220':
+            pass 
+    except:
+        flush_print("220 Not received")
+
+
+""" EMAIL SENDER FNS """
+
+def EHLO(sock: socket.socket):
+    sock.send("EHLO 127.0.0.1\r\n".encode('ascii'))
+    
+
+def MAIL_FROM(sock: socket.socket, email: Email):
+    sock.send(f"MAIL FROM:{email.sender}\r\n".encode('ascii'))
+     
+
+def RCPT_TO(sock: socket.socket, email: Email):
+    sock.send(f"RCPT TO:{email.recpt}\r\n".encode('ascii'))
+
+def DATA(sock: socket.socket, email: Email):
+    
+    sock.send("DATA\r\n".encode('ascii'))
+    check_server_code(sock, 354)
+    
+    sock.send(f"Date: {email.date}".encode('ascii'))
+    check_server_code(sock, 354)
+
+    sock.send(f"Subject: {email.subj}".encode('ascii'))
+    check_server_code(sock, 354)
+
+def QUIT(sock: socket.socket):
+    sock.send("QUIT\r\n".encode('ascii'))
+    check_server_code(sock, 221)
+
 def main():
     if len(sys.argv) < 2:
-        flush_print("No config path given")
+        # flush_print("No config path given")
         sys.exit(1)
     
     config_dict = config_parser(sys.argv[1])
     Email_objs = email_parser(config_dict['send_path'])
+
+    for email in Email_objs:
+        sock = start_socket(config_dict)
+        check_service_ready(sock)
+
+        EHLO(sock)
+        check_server_code(sock, 250) 
+
+        MAIL_FROM(sock, email)
+        check_server_code(sock, 250)
+
+        RCPT_TO(sock, email)
+        check_server_code(sock, 250)
+
+        QUIT(sock)
+        sock.close()
 
     sys.exit(0)
 
