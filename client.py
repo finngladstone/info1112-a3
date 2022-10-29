@@ -1,5 +1,3 @@
-import email
-from io import FileIO
 import os
 import socket
 import sys
@@ -19,8 +17,6 @@ class Custom_dict(dict):
     def add(self, key, value):
         self[key] = value
     
-
-
 class Email():
     def __init__(self, sender, recpt, date, subj, data) -> None:
         self.sender = sender 
@@ -54,8 +50,8 @@ def config_parser(file_path): # handles creation + all error checks for config
 
     key_names = ['server_port', 'send_path']
 
-    for key in reval.keys():
-        if key not in key_names and key != "client_port":
+    for key in key_names:
+        if key not in reval.keys():
             flush_print("Config_parser: missing property")
             sys.exit(2)
 
@@ -80,8 +76,9 @@ def email_parser(path: str):
     for filename in os.scandir(email_dir):
         if not filename.is_file():
             continue
-        else: 
-            email_item_path = os.path.join(email_dir, filename)
+        else:
+            flush_print(f"Email dir: {email_dir}")
+            email_item_path = os.path.join(os.path.abspath(email_dir), filename)
             email_path_ls.append(email_item_path)
 
     # iterates through email paths and creates Email objects if valid 
@@ -124,8 +121,6 @@ def email_parser(path: str):
         
     return email_ls
 
-
-
 def main():
     if len(sys.argv) < 2:
         flush_print("No config path given")
@@ -134,6 +129,7 @@ def main():
     config_dict = config_parser(sys.argv[1])
     Email_objs = email_parser(config_dict['send_path'])
 
+    sys.exit(0)
 
 
 if __name__ == '__main__':
