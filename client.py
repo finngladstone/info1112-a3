@@ -23,9 +23,6 @@ class Config_dict(dict):
     
     def check_data(self): # asserts all required datapoints are covered
 
-        if len(self) != 5: # check all datapoints are addressed
-            return False 
-
         key_names = ['server_port', 'client_port', 'inbox_path', \
             'send_path', 'spy_path']
         
@@ -74,12 +71,10 @@ def parse_config(file_path):
                 temp = line.strip().split("=")
                 return_dict.add(temp[0], temp[1])
             
-    except FileNotFoundError:
-        print("config file path invalid")
+    except FileNotFoundError: # can't find config file
         sys.exit(2)
 
-    if not return_dict.check_data():
-        print("config file has invalid data")
+    if not return_dict.check_data(): # config file invalid data
         sys.exit(2)
 
     return return_dict

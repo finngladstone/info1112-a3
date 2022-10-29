@@ -75,8 +75,7 @@ def parse_config(file_path): # creates custom dict object, adds data from config
         print("config file path invalid")
         sys.exit(2)
 
-    if not return_dict.check_data():
-        print("config file has invalid data")
+    if not return_dict.check_data(): # invalid data
         sys.exit(2)
 
     return return_dict
@@ -104,8 +103,6 @@ def read_email(sock: socket.socket): # emails are inputted here
     temp = Email()
     
 
-
-
 def write_to_file(email: Email, config: dict):
 
     path = os.path.expanduser(config['inbox_path'])
@@ -132,6 +129,7 @@ def main():
 
     while True:
         client_sock, addr = server_sock.accept()
+        client_sock.send()
         
 
 
