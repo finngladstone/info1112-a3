@@ -1,0 +1,3 @@
+server_port=1025
+send_path=~/send
+client_port=1026
