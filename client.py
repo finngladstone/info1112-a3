@@ -77,8 +77,7 @@ def email_parser(path: str):
         if not filename.is_file():
             continue
         else:
-            flush_print(f"Email dir: {email_dir}")
-            email_item_path = os.path.join(os.path.abspath(email_dir), filename)
+            email_item_path = os.path.join(email_dir, filename.name)
             email_path_ls.append(email_item_path)
 
     # iterates through email paths and creates Email objects if valid 
@@ -98,7 +97,6 @@ def email_parser(path: str):
 
         except OSError as e:
             flush_print(f"Could not read file {email_path}")
-            flush_print(e)
             sys.exit(2)
 
         valid_keys = {"From", "To", "Date", "Subject", "Data"}
