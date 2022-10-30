@@ -48,9 +48,16 @@ def get_client_message(sock: socket.socket):
 """ SOCKET FNS """
 
 def init_socket(config: dict):
-    pass 
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+    try:
+        sock.bind((socket.gethostname(), config['server_port']))
+        sock.listen(1)
+    
+    except socket.error:
+        print("Failed to init sock")
 
+    return sock 
 
 
 def main():
