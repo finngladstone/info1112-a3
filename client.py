@@ -21,10 +21,10 @@ class Custom_dict(dict):
 class Email():
     def __init__(self, sender, recpt, date, subj, data) -> None:
         self.sender = sender 
-        self.recpt = recpt
+        self.recpt = recpt # list of recipients
         self.date = date
         self.subj = subj
-        self.data = data
+        self.data = data # String array of each line in the file 
 
     def fix_recpt(self):
         if not "," in self.recpt:
@@ -121,7 +121,12 @@ def email_parser(path: str):
                     temp = fl.readline().strip().split(": ")
                     email_dict.add(temp[0], temp[1])
 
-                data = fl.read()
+                data = fl.read() # reads entire data chunk 
+                data = data.split("\n")
+                
+                if "" in data: # clean after split
+                    data.remove("")
+                
                 email_dict.add("Data", data)
                     
 
@@ -140,9 +145,10 @@ def email_parser(path: str):
                 break 
 
         else:
+
             temp = Email(
                 email_dict['From'],
-                email_dict['To'],
+                email_dict['To'].split(","),
                 email_dict['Date'],
                 email_dict['Subject'],
                 email_dict['Data']
@@ -210,22 +216,33 @@ def MAIL_FROM(sock: socket.socket, email: Email):
      
 
 def RCPT_TO(sock: socket.socket, email: Email):
-    sock.send(f"RCPT TO:{email.recpt}\r\n".encode('ascii'))
+
+    for recipient in email.recpt:
+        sock.send(f"RCPT TO:{recipient}\r\n".encode('ascii'))
+        check_server_code(sock, 250)
+
 
 def DATA(sock: socket.socket, email: Email):
     
     sock.send("DATA\r\n".encode('ascii'))
     check_server_code(sock, 354)
     
-    sock.send(f"Date: {email.date}".encode('ascii'))
+    sock.send(f"Date: {email.date}\r\n".encode('ascii'))
     check_server_code(sock, 354)
 
-    sock.send(f"Subject: {email.subj}".encode('ascii'))
+    sock.send(f"Subject: {email.subj}\r\n".encode('ascii'))
     check_server_code(sock, 354)
+
+    for line in email.data:
+        sock.send(f"{line}\r\n".encode('ascii'))
+        check_server_code(sock, 354)
+
+    sock.send(".\r\n".encode('ascii'))
+    check_server_code(sock, 250)
 
 def QUIT(sock: socket.socket):
     sock.send("QUIT\r\n".encode('ascii'))
-    check_server_code(sock, 221)
+
 
 def main():
     if len(sys.argv) < 2:
@@ -246,9 +263,13 @@ def main():
         check_server_code(sock, 250)
 
         RCPT_TO(sock, email)
-        check_server_code(sock, 250)
+        # checks handled inside rcpt_to()
+
+        DATA(sock, email)
+        # server code checks are handled within data() block
 
         QUIT(sock)
+        check_server_code(sock, 221)
         sock.close()
 
     sys.exit(0)
