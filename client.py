@@ -109,6 +109,7 @@ def email_parser(path: str):
         else:
             email_item_path = os.path.join(path_temp, filename.name)
             email_path_ls.append(email_item_path)
+            email_path_ls.sort()
 
     # iterates through email paths and creates Email objects if valid 
     for email_path in email_path_ls:
@@ -186,6 +187,8 @@ def check_server_code(client_sock: socket.socket, expected_code: int):
     # no error checking on recv()
 
     server_response = (client_sock.recv(256)).decode()
+    flush_print(f"S: {server_response.strip()}\r")
+
     ls = server_response.split()
 
     if expected_code != int(ls[0]):
@@ -197,6 +200,8 @@ def check_service_ready(client_sock: socket.socket):
     
     try:
         server_response = (client_sock.recv(256)).decode()
+        flush_print(f"S: {server_response.strip()}\r")
+
         server_response_ls = server_response.split()
 
         if server_response_ls[0] == '220':
@@ -207,41 +212,55 @@ def check_service_ready(client_sock: socket.socket):
 
 """ EMAIL SENDER FNS """
 
+def request_builer(sock:socket.socket, request: str): # flushes
+    flush_print(f"C: {request}\r")
+    sock.send(f"{request}\r\n".encode('ascii'))
+
 def EHLO(sock: socket.socket):
-    sock.send("EHLO 127.0.0.1\r\n".encode('ascii'))
+    request = "EHLO 127.0.0.1"
+    request_builer(sock, request)
     
 
 def MAIL_FROM(sock: socket.socket, email: Email):
-    sock.send(f"MAIL FROM:{email.sender}\r\n".encode('ascii'))
+    request = f"MAIL FROM:{email.sender}"
+    request_builer(sock, request)
      
 
 def RCPT_TO(sock: socket.socket, email: Email):
 
     for recipient in email.recpt:
-        sock.send(f"RCPT TO:{recipient}\r\n".encode('ascii'))
+        request = f"RCPT TO:{recipient}"
+        request_builer(sock, request)
         check_server_code(sock, 250)
 
 
 def DATA(sock: socket.socket, email: Email):
     
-    sock.send("DATA\r\n".encode('ascii'))
+    # sock.send("DATA\r\n".encode('ascii'))
+    request_builer(sock, "DATA")
     check_server_code(sock, 354)
     
-    sock.send(f"Date: {email.date}\r\n".encode('ascii'))
+    # sock.send(f"Date: {email.date}\r\n".encode('ascii'))
+    request_builer(sock, f"Date: {email.date}")
     check_server_code(sock, 354)
 
-    sock.send(f"Subject: {email.subj}\r\n".encode('ascii'))
+    # sock.send(f"Subject: {email.subj}\r\n".encode('ascii'))
+    request_builer(sock, f"Subject: {email.subj}")
     check_server_code(sock, 354)
 
     for line in email.data:
-        sock.send(f"{line}\r\n".encode('ascii'))
+        request_builer(sock, line)
         check_server_code(sock, 354)
 
-    sock.send(".\r\n".encode('ascii'))
+
+    # sock.send(".\r\n".encode('ascii'))
+    
+    request_builer(sock, ".")
     check_server_code(sock, 250)
 
 def QUIT(sock: socket.socket):
-    sock.send("QUIT\r\n".encode('ascii'))
+    request_builer(sock, "QUIT")
+    # sock.send("QUIT\r\n".encode('ascii'))
 
 
 def main():
