@@ -26,14 +26,6 @@ class Email():
         self.subj = subj
         self.data = data # String array of each line in the file 
 
-    def fix_recpt(self):
-        if not "," in self.recpt:
-            recpt_temp = [self.recpt]
-        else:
-            recpt_temp = self.recpt.split(",")
-        self.recpt = recpt_temp
-        return
-
 
 """
 CONFIG_PARSER()
