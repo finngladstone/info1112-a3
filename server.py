@@ -1,3 +1,4 @@
+import ipaddress
 import os
 import socket
 import sys
@@ -49,6 +50,7 @@ def config_parser(file_path: str): # missing some checks
 
     path_temp = os.path.expanduser(reval['inbox_path'])
     if not os.path.exists(path_temp): #invalid path 
+        flush_print("Path invalid in server_config")
         sys.exit(2) 
 
     if not reval['server_port'].isnumeric(): #invalid port
@@ -57,6 +59,7 @@ def config_parser(file_path: str): # missing some checks
     return reval
 
 def email_writer(config: dict, mail: Email):
+    
     email_name = int(time.time()) # will be fixed later down the line
     
     email_path = os.path.join(email_name, config['send_path']) 
@@ -71,25 +74,48 @@ def email_writer(config: dict, mail: Email):
     
 
 
-
-""" REQUEST PARSERS """
-
-def parse_EHLO(request_str:str):
-    pass 
-
-    #todo check ip validity somewhere
-
-def parse_MAIL_FROM(request_str: str):
-    pass 
-
-def parse_MAIL_TO(request_str: str):
-    pass 
-
-
 """ SEND / RECEIVE """
 
-def get_client_message(sock: socket.socket):
-    # flush print c: ...
+def request_builder(sock: socket.socket, request: str):
+    flush_print(f"S: {request}\r")
+    sock.send(f"{request}\r\n".encode('ascii'))
+
+def check_client_prefix(expected_prefix: str, client_string: str):
+    
+    client_response_ls = client_string.split()
+    if client_response_ls[0] != expected_prefix:
+        raise ValueError(f"Expected {expected_prefix}: Received {client_response_ls[0]}")
+
+""" SERVICE READY """
+
+def send_220(client_sock: socket.socket):
+    request_builder(client_sock, "220: Service ready")
+
+""" EHLO """
+
+def catch_ehlo(client_sock: socket.socket):
+
+    client_response = client_sock.recv(256).decode()
+    flush_print(f"C: {client_response.strip()}")
+
+    client_response_ls = client_response.strip().split()
+    check_client_prefix("EHLO", client_response_ls[0])
+
+    try:
+        check_ip(client_response_ls[1])
+    except ValueError: # send error code to client, reset
+        request_builder(client_sock, "501 Syntax error in parameters or arguments")
+        return False 
+
+    request_builder(client_sock, f"250 {client_response_ls[1]}")
+    return True 
+
+def check_ip(ip: str): 
+    ip_parse = ipaddress.ip_address(ip)
+
+""" MAIL """
+
+def mail_start(client_sock: socket.socket):
     pass 
 
 """ SOCKET FNS """
@@ -97,8 +123,11 @@ def get_client_message(sock: socket.socket):
 def init_socket(config: dict):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+    hostname = socket.gethostname()
+    port = int(config['server_port'])
+
     try:
-        sock.bind((socket.gethostname(), config['server_port']))
+        sock.bind((hostname, port))
         sock.listen(1)
     
     except socket.error:
@@ -107,12 +136,34 @@ def init_socket(config: dict):
     return sock 
 
 
+""" PROGRAM STATE FNS """
+
+
+
 def main():
     if len(sys.argv) < 2:
         sys.exit(1)
     
     config_dict = config_parser(sys.argv[1])
-    pass
+    server_sock = init_socket(config_dict)
+
+    while True: 
+        client_sock, addr = server_sock.accept() # init conn
+        send_220(client_sock) # Service ready
+
+        catch_ehlo(client_sock)
+
+            
+        
+
+
+        
+
+
+
+
+
+    
 
 
 if __name__ == '__main__':
