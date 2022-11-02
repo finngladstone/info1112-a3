@@ -47,6 +47,11 @@ class Server():
         self.current_request = None 
 
         self.state = 0
+        self.possible_commands = [
+            "EHLO", "MAIL", "RCPT", "DATA", "RSET", "NOOP",
+            "AUTH", "QUIT"
+        ]
+
         """ 
         0 = no ehlo
         1 = ehlo 
@@ -117,7 +122,7 @@ class Server():
             command_dict.add("AUTH", self.parse_AUTH())
 
         if self.state == 2:
-            command_dict.add("RCPT TO", self.parse_RCPT())
+            command_dict.add("RCPT", self.parse_RCPT())
             command_dict.add("DATA", self.parse_DATA())
 
 
@@ -125,6 +130,11 @@ class Server():
         response_builder(self.client, "220: Service ready")
 
     def parse_EHLO(self):
+
+        ls = self.current_request.split()
+        if len(ls) < 2:
+            
+
         pass 
 
     def parse_QUIT(self):
@@ -148,8 +158,22 @@ class Server():
     def parse_DATA(self):
         pass 
 
-    
+    """ ERROR MESSAGES"""
 
+    def send_500(self):
+        response_builder(self.client, "500 Syntax error, command unrecognized")
+
+    def send_501(self):
+        response_builder(self.client, "501 Syntax error in parameters or arguments")
+
+    def send_503(self):
+        response_builder(self.client, "503 Bad sequence of commands")
+
+    def send_504(self):
+        response_builder(self.client, "504 Command parameter not implemented")
+    
+    def send_535(self):
+        response_builder(self.client, "535 Authentication credentials invalid")
 
 def main():
     server = Server() 
