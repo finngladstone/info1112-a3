@@ -18,6 +18,9 @@ def check_client_prefix(expected_prefix: str, request: str):
         return False 
     return True 
 
+def check_email_valid(email_address:str): # todo
+    return True 
+
 
 class Custom_dict(dict):
     def __init__(self):
@@ -29,7 +32,7 @@ class Custom_dict(dict):
 class Email():
     def __init__(self) -> None:
         self.sender = None 
-        self.recpt = None # list of recipients
+        self.recpt = [] # list of recipients
         self.date = None
         self.subj = None
         self.data = None # String array of each line in the file 
@@ -133,27 +136,77 @@ class Server():
 
         ls = self.current_request.split()
         if len(ls) < 2:
-            
+            self.send_501()
+            return False 
 
-        pass 
+        try:
+            temp = ipaddress.ip_address(ls[1])
+        except ValueError:
+            self.send_501()
+            return False 
+
+        response_builder(self.client, f"250 {temp}")
 
     def parse_QUIT(self):
-        pass 
+
+        if self.current_request != "QUIT":
+            self.send_501()
+            return False 
+        else: 
+            pass # close the whole joint 
 
     def parse_RSET(self):
-        pass 
+        
+        temp = self.current_request.strip()
+        if temp != "RSET":
+            self.send_501()
+        else: 
+            self.state = 0
+            self.current_email = None 
+            response_builder(self.client, "250 Requested mail action okay completed")
+
 
     def parse_MAIL(self):
-        pass 
+
+        temp = self.current_request.strip().replace(":", " ").split()
+        if len(temp) != 3 or temp[1] != "TO":
+            self.send(501)
+            return 
+        
+        if not check_email_valid(temp[2]):
+            self.send(501)
+            return 
+
+        self.current_email = Email() 
+        self.current_email.sender = temp[2]
+
+        return  
+    
+    def parse_RCPT(self):
+
+        temp = self.current_request.strip().replace(":", " ").split()
+        if len(temp) != 3 or temp[1] != "TO":
+            self.send(501)
+            return
+
+        if not check_email_valid(temp[2]):
+            self.send(501)
+            return 
+
+        self.current_email.recpt.append(temp[2])
+         
 
     def parse_NOOP(self):
-        pass 
+        temp = self.current_request.strip()
+        if temp != "NOOP":
+            self.send_501()
+        else:
+            response_builder(self.client, "250 Requested mail action okay completed") 
 
     def parse_AUTH(self):
         pass 
 
-    def parse_RCPT(self):
-        pass 
+    
 
     def parse_DATA(self):
         pass 
