@@ -117,25 +117,23 @@ class Server():
     def get_command_dict(self):
         
         command_dict = Custom_dict()
-        command_dict.add("EHLO", self.parse_EHLO())
-        command_dict.add("QUIT", self.parse_QUIT())
-        command_dict.add("RSET", self.parse_RSET())
-        command_dict.add("NOOP", self.parse_NOOP())
+        command_dict.add("EHLO", self.parse_EHLO)
+        command_dict.add("QUIT", self.parse_QUIT)
+        command_dict.add("RSET", self.parse_RSET)
+        command_dict.add("NOOP", self.parse_NOOP)
    
 
 
         if self.state == 1:
-            command_dict.add("MAIL", self.parse_MAIL())
-            command_dict.add("AUTH", self.parse_AUTH())
+            command_dict.add("MAIL", self.parse_MAIL)
+            command_dict.add("AUTH", self.parse_AUTH)
 
         if self.state == 2:
-            command_dict.add("RCPT", self.parse_RCPT())
-            command_dict.add("DATA", self.parse_DATA())
+            command_dict.add("RCPT", self.parse_RCPT)
+            command_dict.add("DATA", self.parse_DATA)
 
         return command_dict
 
-
-    
 
     def parse_EHLO(self):
 
@@ -166,6 +164,7 @@ class Server():
         temp = self.current_request.strip()
         if temp != "RSET":
             self.send_501()
+
         else: 
             self.state = 0
             self.current_email = None 
@@ -256,7 +255,7 @@ def main():
             available_commands = server.get_command_dict()
             
             try: 
-                available_commands[prefix]
+                available_commands[prefix]()
             except IndexError:
                 if prefix in server.possible_commands:
                     server.send_504()
