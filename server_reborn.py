@@ -172,9 +172,9 @@ class Server():
 
 
     def parse_MAIL(self):
-
         temp = self.current_request.strip().replace(":", " ").split()
-        if len(temp) != 3 or temp[1] != "TO":
+
+        if len(temp) != 3 or temp[1] != "FROM":
             self.send_501()
             return 
         
