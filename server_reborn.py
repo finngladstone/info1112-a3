@@ -18,6 +18,10 @@ def check_client_prefix(expected_prefix: str, request: str):
         return False 
     return True 
 
+def get_client_prefix(request : str):
+    client_response_ls = request.strip().split()
+    return client_response_ls[0]
+
 def check_email_valid(email_address:str): # todo
     return True 
 
@@ -128,30 +132,32 @@ class Server():
             command_dict.add("RCPT", self.parse_RCPT())
             command_dict.add("DATA", self.parse_DATA())
 
+        return command_dict
 
-    def send_220(self):
-        response_builder(self.client, "220: Service ready")
+
+    
 
     def parse_EHLO(self):
 
         ls = self.current_request.split()
         if len(ls) < 2:
             self.send_501()
-            return False 
+            return  
 
         try:
             temp = ipaddress.ip_address(ls[1])
         except ValueError:
             self.send_501()
-            return False 
+            return  
 
         response_builder(self.client, f"250 {temp}")
+        self.state = 1
 
     def parse_QUIT(self):
 
         if self.current_request != "QUIT":
             self.send_501()
-            return False 
+            return  
         else: 
             pass # close the whole joint 
 
@@ -170,11 +176,11 @@ class Server():
 
         temp = self.current_request.strip().replace(":", " ").split()
         if len(temp) != 3 or temp[1] != "TO":
-            self.send(501)
+            self.send_501()
             return 
         
         if not check_email_valid(temp[2]):
-            self.send(501)
+            self.send_501()
             return 
 
         self.current_email = Email() 
@@ -186,11 +192,11 @@ class Server():
 
         temp = self.current_request.strip().replace(":", " ").split()
         if len(temp) != 3 or temp[1] != "TO":
-            self.send(501)
+            self.send_501()
             return
 
         if not check_email_valid(temp[2]):
-            self.send(501)
+            self.send_501()
             return 
 
         self.current_email.recpt.append(temp[2])
@@ -206,12 +212,14 @@ class Server():
     def parse_AUTH(self):
         pass 
 
-    
-
     def parse_DATA(self):
         pass 
 
-    """ ERROR MESSAGES"""
+
+    """ CODES """
+
+    def send_220(self):
+        response_builder(self.client, "220: Service ready")
 
     def send_500(self):
         response_builder(self.client, "500 Syntax error, command unrecognized")
@@ -239,14 +247,21 @@ def main():
 
     while True:
         server.client, addr = server.socket.accept()
-        server.SEND_220()
+        server.send_220()
 
         while True: 
-            server.get_request() 
+            server.get_request() # updates server.current_request pointer
+            
+            prefix = get_client_prefix(server.current_request)
+            available_commands = server.get_command_dict()
+            
             try: 
-                server.command_dict[server.current_request]
+                available_commands[prefix]
             except IndexError:
-                flush_print("")
+                if prefix in server.possible_commands:
+                    server.send_504()
+                else:
+                    server.send_500()
 
 
 
