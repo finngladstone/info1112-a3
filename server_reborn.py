@@ -156,7 +156,11 @@ class Server():
             self.send_501()
             return  
         else: 
-            pass # close the whole joint 
+            self.send_221()
+            self.client.close()
+            self.client = None
+            self.state = 0
+            
 
     def parse_RSET(self):
         
@@ -249,6 +253,9 @@ class Server():
     def send_220(self):
         response_builder(self.client, "220: Service ready")
 
+    def send_221(self):
+        response_builder(self.client, "221 Service closing transmisssion tunnel")
+
     def send_500(self):
         response_builder(self.client, "500 Syntax error, command unrecognized")
 
@@ -274,6 +281,7 @@ def main():
     server.init_socket()
 
     while True:
+        server.state = 0
         server.client, addr = server.socket.accept()
         server.send_220()
 
@@ -290,6 +298,9 @@ def main():
                     server.send_504()
                 else:
                     server.send_500()
+
+            if server.client == None:
+                break
 
 
 
