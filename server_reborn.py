@@ -39,7 +39,7 @@ class Email():
         self.recpt = [] # list of recipients
         self.date = None
         self.subj = None
-        self.data = None # String array of each line in the file 
+        self.data = [] # String array of each line in the file 
 
     def write_to_file(self):
         pass
@@ -66,18 +66,17 @@ class Server():
         """
 
     def init_socket(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         hn = socket.gethostname()
         port = int(self.config['server_port'])
 
         try:
-            sock.bind((hn, port))
-            sock.listen(1)
+            self.socket.bind((hn, port))
+            self.socket.listen(1)
         except socket.error:
             flush_print("Failed to establish connection")
             return None 
         
-        self.socket = sock 
 
     def init_config(self, file_path: str): 
         reval = Custom_dict()
@@ -185,9 +184,16 @@ class Server():
         self.current_email = Email() 
         self.current_email.sender = temp[2]
 
+        response_builder(self.client, "250 Requested mail action okay completed")
+        self.state = 2
+
         return  
     
     def parse_RCPT(self):
+
+        if self.current_email == None:
+            self.send_503()
+            return
 
         temp = self.current_request.strip().replace(":", " ").split()
         if len(temp) != 3 or temp[1] != "TO":
@@ -199,6 +205,7 @@ class Server():
             return 
 
         self.current_email.recpt.append(temp[2])
+        response_builder(self.client, "250 Requested mail action okay completed")
          
 
     def parse_NOOP(self):
@@ -212,7 +219,29 @@ class Server():
         pass 
 
     def parse_DATA(self):
-        pass 
+
+        if len(self.current_email.recpt) == 0:
+            self.send_503()
+            return 
+        else:
+            response_builder(self.client, "354 Start mail input end <CRLF>.<CRLF>")
+
+        while True:
+            self.get_request() 
+            if self.current_request == ".":
+                break 
+            else:
+                self.current_email.data.append(self.current_request)
+                response_builder(self.client, "354 Start mail input end <CRLF>.<CRLF>")
+                continue
+        
+        response_builder(self.client, "250 Requested mail action okay completed")
+        
+        self.current_email.write_to_file()
+        self.current_email = None 
+        self.state = 1
+
+        return 
 
 
     """ CODES """
