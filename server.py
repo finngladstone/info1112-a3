@@ -23,8 +23,9 @@ def response_builder_ehlo_auth(sock: socket.socket, response:str):
     sock.send((f"{response}\r\n" + "250 AUTH CRAM-MD5\r\n").encode('ascii'))
 
 def response_builder_b64(sock: socket.socket, response): 
-    flush_print(f"S: {response}\r")
-    sock.send(f"{response}\r\n".encode('ascii'))
+    flush_print(f"S: 334 {response}\r")
+    code = "334 ".encode('ascii')
+    sock.send(code + response + "\r\n".encode('ascii'))
 
 def check_client_prefix(expected_prefix: str, request: str):
     client_response_ls = request.split()
@@ -292,14 +293,15 @@ class Server():
 
         self.state = 3
 
-        challenge = "".join(secrets.choice(string.ascii_letters + string.digits) for x in range(64))
+        challenge = "".join(secrets.choice(string.ascii_letters + string.digits) for x in range(32))
 
-        response_builder(self.client, challenge)
+        challenge = challenge.encode('ascii')
+        challenge = base64.b64encode(challenge)
+
+        response_builder_b64(self.client, challenge)
 
     def parse_AUTH_token(self):
         pass 
-
-        
 
     def parse_DATA(self):
 
