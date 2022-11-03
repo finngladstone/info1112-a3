@@ -57,16 +57,21 @@ class Server():
         self.current_request = None 
 
         self.state = 0
+
+        """ 
+        program states
+        0 = no ehlo
+        1 = ehlo 
+        2 = mail
+        3 = getting_auth
+        """
+
         self.possible_commands = [
             "EHLO", "MAIL", "RCPT", "DATA", "RSET", "NOOP",
             "AUTH", "QUIT"
         ]
 
-        """ 
-        0 = no ehlo
-        1 = ehlo 
-        2 = mail
-        """
+        
 
     def init_socket(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -132,11 +137,13 @@ class Server():
 
         if self.state == 1:
             command_dict.add("MAIL", self.parse_MAIL)
-            command_dict.add("AUTH", self.parse_AUTH)
 
         if self.state == 2:
             command_dict.add("RCPT", self.parse_RCPT)
             command_dict.add("DATA", self.parse_DATA)
+
+        if self.state == 3:
+            command_dict.add("AUTH", self.parse_AUTH)
 
         return command_dict
 
@@ -144,7 +151,7 @@ class Server():
     def parse_EHLO(self):
 
         ls = self.current_request.split()
-        if len(ls) < 2:
+        if len(ls) != 2:
             self.send_501()
             return  
 
@@ -155,7 +162,8 @@ class Server():
             return  
 
         response_builder(self.client, f"250 {temp}")
-        self.state = 1
+        response_builder(self.client, "250 AUTH CRAM-MD5")
+        self.state = 3
 
     def parse_QUIT(self):
 
@@ -226,7 +234,20 @@ class Server():
         else:
             response_builder(self.client, "250 Requested mail action okay completed") 
 
+
     def parse_AUTH(self):
+
+        temp = self.current_request.strip().split()
+        if len(temp) != 2:
+            self.send_501()
+            return
+        
+        if temp[1] != "CRAM-MD5":
+            self.send_504()
+            return 
+
+        
+
         pass 
 
     def parse_DATA(self):
