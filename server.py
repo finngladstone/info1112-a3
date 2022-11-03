@@ -1,8 +1,10 @@
-import ipaddress
+import ipaddress # needs to go 
 import os
 import socket
 import sys
 import time
+
+import base64, hmac, hashlib, secrets, string
 
 PERSONAL_ID = '506D1D'
 PERSONAL_SECRET = 'ca1316f53ed206e3217d41b3951fffa5'
@@ -11,6 +13,15 @@ def flush_print(x):
     print(x, flush=True)
 
 def response_builder(sock: socket.socket, response: str):
+    flush_print(f"S: {response}\r")
+    sock.send(f"{response}\r\n".encode('ascii'))
+
+def response_builder_ehlo_auth(sock: socket.socket, response:str): 
+    flush_print(f"S: {response}\r")
+    flush_print(f"S: 250 AUTH CRAM-MD5\r")
+    sock.send((f"{response}\r\n" + "250 AUTH CRAM-MD5\r\n").encode('ascii'))
+
+def response_builder_b64(sock: socket.socket, response): 
     flush_print(f"S: {response}\r")
     sock.send(f"{response}\r\n".encode('ascii'))
 
@@ -137,6 +148,7 @@ class Server():
 
         if self.state == 1:
             command_dict.add("MAIL", self.parse_MAIL)
+            command_dict.add("AUTH", self.parse_AUTH)
 
         if self.state == 2:
             command_dict.add("RCPT", self.parse_RCPT)
@@ -161,9 +173,8 @@ class Server():
             self.send_501()
             return  
 
-        response_builder(self.client, f"250 {temp}")
-        response_builder(self.client, "250 AUTH CRAM-MD5")
-        self.state = 3
+        response_builder_ehlo_auth(self.client, f"250 {temp}")
+        self.state = 1
 
     def parse_QUIT(self):
 
@@ -246,9 +257,16 @@ class Server():
             self.send_504()
             return 
 
-        
+        self.state = 3
 
+        challenge = "".join(secrets.choice(string.ascii_letters + string.digits) for x in range(64))
+
+        response_builder(self.client, challenge)
+
+    def parse_AUTH_token(self):
         pass 
+
+        
 
     def parse_DATA(self):
 
@@ -323,13 +341,17 @@ def main():
             except:
                 flush_print("S: Connection lost")
                 break
+            
             available_commands = server.get_command_dict()
             
             try: 
                 available_commands[prefix]()
             except KeyError:
                 if prefix in server.possible_commands:
-                    server.send_504()
+                    server.send_503()
+                
+                elif server.state == 3:
+                    server.parse_AUTH_token()
                 else:
                     server.send_500()
 
