@@ -3,6 +3,7 @@ import os
 import socket
 import sys
 import time
+from datetime import datetime
 
 import base64, hmac, hashlib, secrets, string
 
@@ -55,7 +56,39 @@ class Email():
         self.subj = None
         self.data = [] # String array of each line in the file 
 
-    def write_to_file(self):
+    def write_to_file(self, save_path):
+
+        # Date: Mon, 14 Sep 1987 23:07:00 +1000
+
+        for line in self.data:
+            line_ls = line.split(": ")
+            if line_ls[0] == "Date":
+                try:
+                    time_interpreter = datetime.strptime(line_ls[1], "%a, %d %b %Y %H:%M:%S %z")
+                    fl_name = f"{int(datetime.timestamp(time_interpreter))}.txt"
+                    break 
+                except:
+                    continue
+
+        else:
+            fl_name = "unknown.txt"
+
+        fl_path = os.path.join(save_path, fl_name)
+
+        with open(fl_path, 'x') as fl:
+            fl.write(f"From: {self.sender}\n")
+
+            s = ""
+            for address in self.recpt:
+                s += f"{address},"
+            fl.write(f"To: {s.rstrip(',')}\n")
+
+            for line in self.data:
+                fl.write(f"{line}\n")
+                
+
+
+
         pass
 
 class Server():
@@ -287,7 +320,9 @@ class Server():
         
         response_builder(self.client, "250 Requested mail action okay completed")
         
-        self.current_email.write_to_file()
+        self.current_email.write_to_file(
+            os.path.expanduser(self.config['inbox_path'])
+        )
         self.current_email = None 
         self.state = 1
 
