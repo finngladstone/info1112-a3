@@ -39,6 +39,7 @@ def get_client_prefix(request : str):
     return client_response_ls[0]
 
 def check_email_valid(email_address:str): # todo
+    
     return True 
 
 
@@ -166,7 +167,7 @@ class Server():
         self.config = reval
 
     def get_request(self):
-        request = self.client.recv(256).decode().strip()
+        request = self.client.recv(256).decode().rstrip("\r\n")
         self.current_request = request
         flush_print(f"C: {request}\r")
 
@@ -222,7 +223,7 @@ class Server():
             self.send_501()
             return  
 
-        response_builder_ehlo_auth(self.client, f"250 {temp}")
+        response_builder_ehlo_auth(self.client, f"250 127.0.0.1")
         self.state = 1
 
     def parse_QUIT(self):
@@ -244,7 +245,7 @@ class Server():
             self.send_501()
 
         else: 
-            self.state = 0
+            self.state = 1
             self.current_email = None 
             response_builder(self.client, "250 Requested mail action okay completed")
 
@@ -420,7 +421,7 @@ def main():
             try: 
                 prefix = get_client_prefix(server.current_request)
             except:
-                flush_print("S: Connection lost")
+                flush_print("S: Connection lost\r")
                 break
             
             available_commands = server.get_command_dict()
