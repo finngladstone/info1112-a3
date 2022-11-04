@@ -7,8 +7,8 @@ from datetime import datetime
 
 import base64, hmac, hashlib, secrets, string
 
-PERSONAL_ID = '506D1D'
-PERSONAL_SECRET = 'ca1316f53ed206e3217d41b3951fffa5'
+PERSONAL_ID = "506D1D"
+PERSONAL_SECRET = "ca1316f53ed206e3217d41b3951fffa5"
 
 def flush_print(x):
     print(x, flush=True)
@@ -42,7 +42,7 @@ def check_email_valid(email_address:str): # todo
     return True 
 
 
-class Custom_dict(dict):
+class CustomDict(dict):
     def __init__(self):
         self = dict()
 
@@ -88,18 +88,16 @@ class Email():
                 fl.write(f"{line}\n")
                 
 
-
-
-        pass
-
 class Server():
     def __init__(self):
         self.email = None 
         self.config = None 
         self.socket: socket.socket = None 
         self.client: socket.socket = None 
+
         self.current_email = None 
         self.current_request = None 
+        self.current_challenge = None 
 
         self.state = 0
 
@@ -116,7 +114,9 @@ class Server():
             "AUTH", "QUIT"
         ]
 
-        
+    """ 
+    SERVER HELPER FUNCTIONS 
+    """
 
     def init_socket(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -136,7 +136,7 @@ class Server():
         
 
     def init_config(self, file_path: str): 
-        reval = Custom_dict()
+        reval = CustomDict()
 
         try: 
             with open(file_path, 'r') as fl:
@@ -172,13 +172,11 @@ class Server():
 
     def get_command_dict(self):
         
-        command_dict = Custom_dict()
+        command_dict = CustomDict()
         command_dict.add("EHLO", self.parse_EHLO)
         command_dict.add("QUIT", self.parse_QUIT)
         command_dict.add("RSET", self.parse_RSET)
         command_dict.add("NOOP", self.parse_NOOP)
-   
-
 
         if self.state == 1:
             command_dict.add("MAIL", self.parse_MAIL)
@@ -193,6 +191,23 @@ class Server():
 
         return command_dict
 
+    def check_user_code(self, user_code: str):
+
+        if user_code != str(PERSONAL_ID):
+            raise ValueError
+
+    def check_hash_code(self, hash_code): 
+
+        client_hash = bytes.fromhex(hash_code)
+        rehash = hmac.digest(PERSONAL_SECRET.encode('ascii'), self.current_challenge.encode('ascii'), hashlib.md5)
+        
+        if not (client_hash == rehash):
+            raise ValueError
+
+
+    """
+    COMMAND PARSERS
+    """
 
     def parse_EHLO(self):
 
@@ -293,15 +308,39 @@ class Server():
 
         self.state = 3
 
-        challenge = "".join(secrets.choice(string.ascii_letters + string.digits) for x in range(32))
-
-        challenge = challenge.encode('ascii')
+        self.current_challenge = "".join(secrets.choice(string.ascii_letters + string.digits) for x in range(32))
+        
+        challenge = self.current_challenge.encode('ascii')
         challenge = base64.b64encode(challenge)
-
         response_builder_b64(self.client, challenge)
 
     def parse_AUTH_token(self):
-        pass 
+
+        if self.current_request == "*":
+            self.send_501()
+            self.state = 1
+            return 
+
+        try: 
+            auth_response = base64.b64decode(self.current_request.encode())
+        except:
+            self.send_501()
+            return 
+        
+        auth_response_ls = auth_response.decode().strip().split()
+
+        try:
+            self.check_user_code(auth_response_ls[0].strip())
+            self.check_hash_code(auth_response_ls[1])
+        except ValueError:
+            self.send_535()
+            return 
+        
+        self.send_235()
+        self.state = 1
+
+        
+
 
     def parse_DATA(self):
 
@@ -331,13 +370,18 @@ class Server():
         return 
 
 
-    """ CODES """
+    """ 
+    CODES 
+    """
 
     def send_220(self):
         response_builder(self.client, "220 Service ready")
 
     def send_221(self):
         response_builder(self.client, "221 Service closing transmission channel")
+
+    def send_235(self):
+        response_builder(self.client, "235 Authentication successful")
 
     def send_500(self):
         response_builder(self.client, "500 Syntax error, command unrecognized")
